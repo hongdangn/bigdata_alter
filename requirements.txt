@@ -1,0 +1,15 @@
+# Scrapy and dependencies
+scrapy>=2.11.0
+itemadapter>=0.8.0
+
+# Kafka
+confluent-kafka==2.12.2
+
+# Spark
+pyspark==3.5.0
+
+# Elasticsearch (optional, for direct testing)
+elasticsearch==8.18.0
+
+# Utilities
+python-dotenv>=1.0.0
