@@ -7,9 +7,11 @@ confluent-kafka==2.12.2
 
 # Spark
 pyspark==3.5.0
+spark==0.2.1
+kafka-python==2.0.6
 
 # Elasticsearch (optional, for direct testing)
-elasticsearch==8.18.0
+# elasticsearch==8.18.0
 
 # Utilities
 python-dotenv>=1.0.0

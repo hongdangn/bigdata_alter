@@ -25,8 +25,7 @@ def create_spark_session():
     spark = SparkSession.builder \
         .appName("BatDongSanStreaming") \
         .config("spark.jars.packages", 
-                "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,"
-                "org.elasticsearch:elasticsearch-spark-30_2.12:8.18.8") \
+                "org.apache.spark:spark-sql-kafka-0-10_2.12:3.4.3,org.elasticsearch:elasticsearch-spark-30_2.12:8.18.8") \
         .config("spark.sql.streaming.checkpointLocation", "/tmp/checkpoint") \
         .config("spark.streaming.stopGracefullyOnShutdown", "true") \
         .getOrCreate()
@@ -47,13 +46,11 @@ def process_stream(spark, kafka_bootstrap_servers, kafka_topic, es_host, es_inde
         .option("startingOffsets", "latest") \
         .load()
     
-    # Parse JSON data
     parsed_df = df.select(
         from_json(col("value").cast("string"), schema).alias("data"),
         col("timestamp").alias("kafka_timestamp")
     ).select("data.*", "kafka_timestamp")
     
-    # Add processing timestamp
     processed_df = parsed_df.withColumn("processed_at", current_timestamp())
     
     # Write to Elasticsearch
@@ -62,9 +59,10 @@ def process_stream(spark, kafka_bootstrap_servers, kafka_topic, es_host, es_inde
         .outputMode("append") \
         .option("es.nodes", es_host) \
         .option("es.port", "9200") \
-        .option("es.resource", f"{es_index}/_doc") \
+        .option("es.resource", f"{es_index}") \
         .option("es.mapping.id", "link") \
         .option("es.index.auto.create", "true") \
+        .option("es.mapping.date.rich", "false") \
         .option("checkpointLocation", f"/tmp/checkpoint/{kafka_topic}") \
         .start()
     
@@ -73,17 +71,21 @@ def process_stream(spark, kafka_bootstrap_servers, kafka_topic, es_host, es_inde
     return query
 
 def main():
-    # Configuration
     KAFKA_BOOTSTRAP_SERVERS = "localhost:9092"
-    KAFKA_TOPIC = "batdongsan"  # Change based on your spider name
+    KAFKA_TOPIC = "batdongsan"
     ES_HOST = "localhost"
     ES_INDEX = "batdongsan"
+
+    import requests
+    try:
+        requests.delete(f"http://{ES_HOST}:9200/{ES_INDEX}")
+        print("Deleted old Elasticsearch index.")
+    except:
+        print("Index did not exist.")
     
-    # Create Spark Session
     spark = create_spark_session()
     
     try:
-        # Start streaming query
         query = process_stream(
             spark, 
             KAFKA_BOOTSTRAP_SERVERS, 
@@ -92,7 +94,6 @@ def main():
             ES_INDEX
         )
         
-        # Wait for termination
         query.awaitTermination()
         
     except Exception as e:
