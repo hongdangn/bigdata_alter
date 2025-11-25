@@ -86,10 +86,10 @@ class BdsSpiderSpider(scrapy.Spider):
         bds_item['price'] = response.css('ul.list-attr-hot')[0].css('li')[0].css('span.value-attr::text').get()
         bds_item['square'] = response.css('ul.list-attr-hot')[0].css('li')[1].css('span.value-attr::text').get()
         
-        bds_item['address'] = {'full_address': None, 'province': None, 'district': None, 'ward': None}
-        bds_item['address']['province'] = response.css("ul.breadcrumb li:nth-child(2) a::text").get()
-        bds_item['address']['district'] = response.css("ul.breadcrumb li:nth-child(3) a::text").get()
-        bds_item['address']['ward'] = response.css("ul.breadcrumb li:nth-child(4) a::text").get()
+        # bds_item['address'] = {'full_address': None, 'province': None, 'district': None, 'ward': None}
+        bds_item['province'] = response.css("ul.breadcrumb li:nth-child(2) a::text").get()
+        bds_item['district'] = response.css("ul.breadcrumb li:nth-child(3) a::text").get()
+        bds_item['ward'] = response.css("ul.breadcrumb li:nth-child(4) a::text").get()
         
         bds_item['post_date'] = response.css('ul.list-attr-hot')[0].css('li')[2].css('span.value-attr2::text').get()
         

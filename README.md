@@ -210,31 +210,7 @@ docker exec kafka kafka-consumer-groups \
 
 ## 🛠️ Customization
 
-### Adding New Fields to Spider
-
-1. Update `BatdongsanItem` in `pipelines.py`:
-```python
-class BatdongsanItem(scrapy.Item):
-    # Existing fields...
-    property_type = Field()  # Add new field
-    year_built = Field()
-```
-
-2. Update spider to extract new field:
-```python
-item['property_type'] = response.css('span.property-type::text').get()
-```
-
-3. Update Spark schema in `spark_streaming.py`:
-```python
-schema = StructType([
-    # Existing fields...
-    StructField("property_type", StringType(), True),
-    StructField("year_built", StringType(), True)
-])
-```
-
-### Scaling for Production
+### Scaling
 
 **Increase Scrapy Performance:**
 ```python
@@ -309,25 +285,6 @@ docker exec kafka kafka-console-consumer \
 curl http://localhost:9200/batdongsan/_count
 ```
 
-### Issue: Spark Streaming Crashes
-
-**Common Causes:**
-1. **Out of Memory:** Increase Java heap size
-2. **Schema Mismatch:** Verify item fields match schema
-3. **Elasticsearch connection:** Check ES is accessible
-
-**Solutions:**
-```bash
-# Increase Spark memory
-export PYSPARK_DRIVER_PYTHON_OPTS="-Xmx2g"
-
-# Check Elasticsearch health
-curl http://localhost:9200/_cluster/health?pretty
-
-# View detailed Spark logs
-# Check terminal output for stack traces
-```
-
 ### Issue: Kibana Can't Connect to Elasticsearch
 
 ```bash
@@ -346,12 +303,7 @@ docker logs kibana
 ```bash
 # Check container logs
 docker-compose logs [service_name]
-
-# Check available resources
 docker stats
-
-# Increase Docker memory
-# Docker Desktop → Settings → Resources → Memory (set to 8GB+)
 
 # Remove old volumes and restart
 docker-compose down -v
@@ -384,41 +336,6 @@ echo '{"title":"Test Property","price":"500000","link":"http://test.com"}' | \
 curl http://localhost:9200/batdongsan/_search?q=title:Test
 ```
 
-## 📊 Performance Benchmarks
-
-| Component | Metric | Expected Value |
-|-----------|--------|----------------|
-| Scrapy | Items/minute | 100-500 |
-| Kafka | Messages/second | 1,000+ |
-| Spark | Processing latency | <5 seconds |
-| Elasticsearch | Indexing rate | 1,000+ docs/sec |
-
-## 🔒 Security Notes
-
-**For Production Deployment:**
-- Enable Kafka authentication (SASL/SSL)
-- Enable Elasticsearch security features
-- Use environment variables for sensitive config
-- Implement rate limiting on scrapers
-- Use VPN/private networks for services
-
-## 📝 Maintenance
-
-### Backup Elasticsearch Data:
-```bash
-# Create snapshot repository
-curl -X PUT "localhost:9200/_snapshot/backup" -H 'Content-Type: application/json' -d'
-{
-  "type": "fs",
-  "settings": {
-    "location": "/backup"
-  }
-}'
-
-# Create snapshot
-curl -X PUT "localhost:9200/_snapshot/backup/snapshot_1?wait_for_completion=true"
-```
-
 ### Clean Old Data:
 ```bash
 # Delete old documents (older than 30 days)
@@ -446,25 +363,3 @@ rm -rf /tmp/checkpoint
 # Start fresh
 docker-compose up -d
 ```
-
-## 📚 Additional Resources
-
-- [Scrapy Documentation](https://docs.scrapy.org/)
-- [Apache Kafka Documentation](https://kafka.apache.org/documentation/)
-- [Spark Structured Streaming Guide](https://spark.apache.org/docs/latest/structured-streaming-programming-guide.html)
-- [Elasticsearch Guide](https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html)
-- [Kibana Guide](https://www.elastic.co/guide/en/kibana/current/index.html)
-
-## 🤝 Contributing
-
-Feel free to submit issues and enhancement requests!
-
-## 📄 License
-
-MIT License - feel free to use this project for learning and commercial purposes.
-
----
-
-**Happy Scraping! 🚀**
-
-For questions or issues, check the troubleshooting section or open an issue on GitHub.

@@ -11,8 +11,6 @@ from confluent_kafka import Producer, Consumer
 
 
 def test_docker_services():
-    """Test if all Docker services are running"""
-    print("🔍 Testing Docker services...")
     
     services = {
         'Kafka': 'kafka',
@@ -37,9 +35,9 @@ def test_docker_services():
     all_running = True
     for name, service in services.items():
         if service in running_services:
-            print(f"  ✓ {name} is running")
+            print(f"{name} is running")
         else:
-            print(f"  ✗ {name} is NOT running")
+            print(f"{name} is NOT running")
             all_running = False
     
     return all_running

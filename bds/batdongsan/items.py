@@ -7,7 +7,11 @@ class BatdongsanItem(scrapy.Item):
     description = Field()
     price = Field()
     square = Field()
-    address = Field()
+    # address = Field()
+    province = Field()
+    district = Field()
+    ward = Field()
+
     post_date = Field()
     link = Field()
     num_bedrooms = Field()
