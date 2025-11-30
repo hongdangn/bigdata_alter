@@ -109,12 +109,12 @@ def main():
     ES_HOST = "localhost"
     ES_INDEX = "batdongsan"
 
-    # import requests
-    # try:
-    #     requests.delete(f"http://{ES_HOST}:9200/{ES_INDEX}")
-    #     print("Deleted old Elasticsearch index.")
-    # except:
-    #     print("Index did not exist.")
+    import requests
+    try:
+        requests.delete(f"http://{ES_HOST}:9200/{ES_INDEX}")
+        print("Deleted old Elasticsearch index.")
+    except:
+        print("Index did not exist.")
     
     spark = create_spark_session()
     

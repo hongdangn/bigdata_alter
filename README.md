@@ -178,32 +178,10 @@ docker exec kafka kafka-consumer-groups \
    - Go to **Management → Stack Management → Index Patterns**
    - Click **Create index pattern**
    - Enter: `batdongsan*`
-   - Select time field: `processed_at`
+   - Select time field: `processed_at` (optional)
    - Click **Create**
 
-3. **Create Visualizations:**
-
-   **Price Distribution (Bar Chart):**
-   - Analytics → Visualize → Create visualization → Lens
-   - Add field: `price` (Average or Median)
-   - Split by: `address` or custom ranges
-
-   **Property Count by Area (Pie Chart):**
-   - Create visualization → Pie
-   - Slice by: `address`
-   - Metric: Count
-
-   **Time Series (Line Chart):**
-   - Create visualization → Line
-   - X-axis: `processed_at` (Date Histogram)
-   - Y-axis: Count
-
-   **Data Table:**
-   - Create visualization → Table
-   - Columns: title, price, address, num_bedrooms, square
-   - Add search and filters
-
-4. **Create Dashboard:**
+3. **Create Dashboard:**
    - Analytics → Dashboard → Create dashboard
    - Add your visualizations
    - Arrange and save
@@ -234,13 +212,6 @@ spark = SparkSession.builder \
     .config("spark.executor.memory", "4g") \
     .config("spark.executor.cores", "2") \
     .config("spark.streaming.kafka.maxRatePerPartition", "1000")
-```
-
-**Scale Elasticsearch:**
-```yaml
-# In docker-compose.yml
-environment:
-  - "ES_JAVA_OPTS=-Xms2g -Xmx2g"
 ```
 
 ## 🐛 Troubleshooting
@@ -285,45 +256,6 @@ docker exec kafka kafka-console-consumer \
 curl http://localhost:9200/batdongsan/_count
 ```
 
-### Issue: Kibana Can't Connect to Elasticsearch
-
-```bash
-# Check Elasticsearch is running
-curl http://localhost:9200
-
-# Restart Kibana
-docker-compose restart kibana
-
-# Check Kibana logs
-docker logs kibana
-```
-
-### Issue: Docker Containers Keep Restarting
-
-```bash
-# Check container logs
-docker-compose logs [service_name]
-docker stats
-
-# Remove old volumes and restart
-docker-compose down -v
-docker-compose up -d
-```
-
-## 🧪 Testing
-
-### Test Scrapy to Kafka:
-```bash
-# Run spider with limited items
-scrapy crawl batdongsan_spider -s CLOSESPIDER_ITEMCOUNT=10
-
-# Monitor Kafka for messages
-docker exec kafka kafka-console-consumer \
-  --topic batdongsan \
-  --from-beginning \
-  --bootstrap-server localhost:9093
-```
-
 ### Test Kafka to Spark to Elasticsearch:
 ```bash
 # 1. Send test message to Kafka
@@ -334,32 +266,4 @@ echo '{"title":"Test Property","price":"500000","link":"http://test.com"}' | \
 
 # 2. Check Elasticsearch
 curl http://localhost:9200/batdongsan/_search?q=title:Test
-```
-
-### Clean Old Data:
-```bash
-# Delete old documents (older than 30 days)
-curl -X POST "localhost:9200/batdongsan/_delete_by_query" \
-  -H 'Content-Type: application/json' -d'
-{
-  "query": {
-    "range": {
-      "processed_at": {
-        "lt": "now-30d"
-      }
-    }
-  }
-}'
-```
-
-### Reset Everything:
-```bash
-# Stop and remove all data
-docker-compose down -v
-
-# Remove checkpoint directories
-rm -rf /tmp/checkpoint
-
-# Start fresh
-docker-compose up -d
 ```
