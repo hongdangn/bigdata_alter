@@ -34,6 +34,16 @@ ITEM_PIPELINES = {
 # Kafka Configuration
 KAFKA_BOOTSTRAP_SERVERS = 'localhost:9092'
 
+# Batch Processing Configuration (Optional - uncomment to enable batch export)
+# ITEM_PIPELINES = {
+#     'batdongsan.pipelines.BatdongsanPipeline': 300,
+#     'batdongsan.pipelines.PushToKafka': 400,
+#     'export_to_batch.ExportToBatchFile': 500,  # Enable for batch export
+# }
+# BATCH_OUTPUT_DIR = '../data/batch_input'
+# BATCH_FILE_FORMAT = 'json'  # or 'csv'
+# BATCH_SIZE = 1000  # items per file
+
 # Set settings whose default value is deprecated to a future-proof value
 REQUEST_FINGERPRINTER_IMPLEMENTATION = '2.7'
 TWISTED_REACTOR = 'twisted.internet.asyncioreactor.AsyncioSelectorReactor'

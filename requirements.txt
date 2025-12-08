@@ -14,5 +14,8 @@ kafka-python==2.0.6
 # Elasticsearch (optional, for direct testing)
 # elasticsearch==8.18.0
 
+# Batch Processing & Scheduling
+apscheduler>=3.10.0
+
 # Utilities
 python-dotenv>=1.0.0

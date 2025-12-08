@@ -5,9 +5,11 @@ from pyspark.sql.types import StringType, FloatType, StructType, StructField, Bo
 from pre_process import special_chars_list, remove_special_chars, remove_duplicate_punctuation_sequence, remove_special_chars_uds
 import logging
 import regex as re
+import os
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 # Define schema for real estate data
 schema = StructType([
@@ -29,13 +31,21 @@ schema = StructType([
 
 def create_spark_session():
     """Create Spark Session with Kafka and Elasticsearch configs"""
+
+    checkpoint_path = os.path.join(os.getcwd(), "checkpoint_dir")
+    if not os.path.exists(checkpoint_path):
+        os.makedirs(checkpoint_path)
+
+
     spark = SparkSession.builder \
         .appName("BatDongSanStreaming") \
         .config("spark.jars.packages", 
                 "org.apache.spark:spark-sql-kafka-0-10_2.12:3.4.3,org.elasticsearch:elasticsearch-spark-30_2.12:8.18.8") \
-        .config("spark.sql.streaming.checkpointLocation", "/tmp/checkpoint") \
+        .config("spark.sql.streaming.checkpointLocation", checkpoint_path ) \
         .config("spark.streaming.stopGracefullyOnShutdown", "true") \
         .getOrCreate()
+
+    
     
     spark.sparkContext.setLogLevel("WARN")
     return spark
