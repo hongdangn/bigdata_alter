@@ -46,8 +46,10 @@ AUTOTHROTTLE_MAX_DELAY = 10
 AUTOTHROTTLE_TARGET_CONCURRENCY = 2.0
 
 # Enable and configure HTTP caching
-HTTPCACHE_ENABLED = True
-HTTPCACHE_EXPIRATION_SECS = 0
+# Set to False for production to always get fresh data
+# Set to True for development/testing to save bandwidth
+HTTPCACHE_ENABLED = False  # Changed: Disable cache for fresh data
+HTTPCACHE_EXPIRATION_SECS = 3600  # Changed: Cache expires after 1 hour (if enabled)
 HTTPCACHE_DIR = 'httpcache'
 HTTPCACHE_IGNORE_HTTP_CODES = []
 HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
