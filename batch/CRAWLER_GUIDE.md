@@ -9,14 +9,30 @@
 
 ```bash
 # Chạy liên tục cho Hà Nội, interval 120 phút rồi lặp lại quá trình crawl (mục đích: trong 120 phút đó, có thể có các dữ liệu mới, vậy thì lặp lại để crawl tiếp -> Lưu vào trong minio để Spark xử lý, loại bỏ các subject bị crawl 2 lần )
-python run_continuous_crawler.py --provinces ha-noi --interval 120 --max-page 500
 
-# Nhiều tỉnh
+# Crawl cho Hà Nội (khoảng 10 tiếng)
+
+```bash
 python run_continuous_crawler.py \
-    --provinces ha-noi ho-chi-minh da-nang hai-phong \
-    --interval 60 \
-    --max-page 100
+    --provinces ha-noi \
+    --interval 99999 \
+    --max-page 1050
 ```
+
+```bash
+python kafka_to_minio.py
+```
+
+
+
+# Crawl cho Hồ Chí Minh (khoảng 10 tiếng)
+```bash
+python run_continuous_crawler.py \
+    --provinces ho-chi-minh \
+    --interval 99999 \
+    --max-page 910
+```
+
 
 
 ---
