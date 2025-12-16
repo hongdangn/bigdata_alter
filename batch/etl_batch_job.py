@@ -320,10 +320,10 @@ class RealEstateETL:
             # === Analytics 2: Daily Posting Trends ===
             df_daily_trend = df_silver \
                 .filter(col("post_date_parsed").isNotNull()) \
-                .withColumn("year", year(col("post_date_parsed"))) \
-                .withColumn("month", month(col("post_date_parsed"))) \
-                .withColumn("day", dayofmonth(col("post_date_parsed"))) \
-                .groupBy("province_clean", "year", "month", "day") \
+                .withColumn("post_year", year(col("post_date_parsed"))) \
+                .withColumn("post_month", month(col("post_date_parsed"))) \
+                .withColumn("post_day", dayofmonth(col("post_date_parsed"))) \
+                .groupBy("province_clean", "post_year", "post_month", "post_day") \
                 .agg(count("*").alias("daily_post_count"))
             
             # === Analytics 3: Province Summary ===
@@ -352,7 +352,6 @@ class RealEstateETL:
             
             df_daily_trend.write \
                 .mode("overwrite") \
-                .partitionBy("year", "month") \
                 .parquet(f"{output_path}/daily_trends/")
             logger.info(f"  ✓ Daily trends written")
             

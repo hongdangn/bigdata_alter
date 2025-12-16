@@ -6,6 +6,8 @@ import pandas as pd
 from minio import Minio
 from minio.error import S3Error
 import sys
+import os
+import shutil
 from tabulate import tabulate
 
 def connect_minio():
@@ -42,6 +44,39 @@ def download_and_view(client, bucket, object_name, output_file):
         return df
     except Exception as e:
         print(f"❌ Error reading file: {e}")
+        return None
+
+def download_and_view_partitioned(client, bucket, prefix, output_dir="temp_parquet"):
+    """Download all parquet files from a partitioned folder and read as single DataFrame"""
+    try:
+        # Clean and create temp directory
+        if os.path.exists(output_dir):
+            shutil.rmtree(output_dir)
+        os.makedirs(output_dir)
+        
+        # Download all parquet files
+        objects = list(client.list_objects(bucket, prefix=prefix, recursive=True))
+        parquet_files = [obj for obj in objects if obj.object_name.endswith('.parquet')]
+        
+        if not parquet_files:
+            return None
+        
+        for obj in parquet_files:
+            file_name = obj.object_name.replace('/', '_')
+            local_path = os.path.join(output_dir, file_name)
+            client.fget_object(bucket, obj.object_name, local_path)
+        
+        # Read all parquet files as one DataFrame
+        df = pd.read_parquet(output_dir)
+        
+        # Cleanup
+        shutil.rmtree(output_dir)
+        
+        return df
+    except Exception as e:
+        print(f"❌ Error reading partitioned data: {e}")
+        if os.path.exists(output_dir):
+            shutil.rmtree(output_dir)
         return None
 
 def main():
@@ -172,6 +207,32 @@ def main():
                 print(f"✅ Provinces analyzed: {len(df_province)}")
                 print("\nProvince statistics:")
                 print(tabulate(df_province, headers='keys', tablefmt='pretty', showindex=False))
+        
+        # Preview Daily Trends
+        daily_files = [obj for obj in gold_files if "daily_trends" in obj.object_name and obj.object_name.endswith('.parquet')]
+        if daily_files:
+            print(f"\n📅 Daily Trends Preview:")
+            # Read first parquet file (no longer partitioned)
+            df_daily = download_and_view(client, bucket, daily_files[0].object_name, "temp_daily.parquet")
+            
+            if df_daily is not None:
+                print(f"✅ Daily records: {len(df_daily)}")
+                print("\nTop 10 days by posting count:")
+                top_days = df_daily.nlargest(10, 'daily_post_count')[
+                    ['province_clean', 'post_year', 'post_month', 'post_day', 'daily_post_count']
+                ]
+                print(tabulate(top_days, headers='keys', tablefmt='pretty', showindex=False))
+        
+        # Preview Quality Metrics
+        quality_files = [obj for obj in gold_files if "quality_metrics" in obj.object_name and obj.object_name.endswith('.parquet')]
+        if quality_files:
+            print(f"\n✅ Quality Metrics Preview:")
+            df_quality = download_and_view(client, bucket, quality_files[0].object_name, "temp_quality.parquet")
+            
+            if df_quality is not None:
+                print(f"✅ Quality scores tracked: {len(df_quality)}")
+                print("\nData quality distribution:")
+                print(tabulate(df_quality.sort_values('quality_score'), headers='keys', tablefmt='pretty', showindex=False))
     else:
         print("⚠️  No Gold files found. Run ETL batch job first!")
     print()
@@ -188,6 +249,10 @@ def main():
     if district_files and 'df_district' in locals() and df_district is not None:
         has_data = True
     if province_files and 'df_province' in locals() and df_province is not None:
+        has_data = True
+    if daily_files and 'df_daily' in locals() and df_daily is not None:
+        has_data = True
+    if quality_files and 'df_quality' in locals() and df_quality is not None:
         has_data = True
     
     if not has_data:
@@ -217,6 +282,18 @@ def main():
             if province_files and 'df_province' in locals() and df_province is not None:
                 df_province.to_csv("sample/province_summary.csv", index=False, encoding='utf-8-sig')
                 print("✅ Exported: province_summary.csv")
+                exported_count += 1
+            
+            # Export Gold Daily Trends
+            if daily_files and 'df_daily' in locals() and df_daily is not None:
+                df_daily.to_csv("sample/daily_trends.csv", index=False, encoding='utf-8-sig')
+                print("✅ Exported: daily_trends.csv")
+                exported_count += 1
+            
+            # Export Gold Quality Metrics
+            if quality_files and 'df_quality' in locals() and df_quality is not None:
+                df_quality.to_csv("sample/quality_metrics.csv", index=False, encoding='utf-8-sig')
+                print("✅ Exported: quality_metrics.csv")
                 exported_count += 1
             
             if exported_count > 0:

@@ -26,7 +26,10 @@ class ETLScheduler:
     Manages scheduled ETL job execution
     """
     
-    def __init__(self, etl_script="etl_batch_job.py", python_cmd="python"):
+    def __init__(self, 
+                 etl_script="etl_batch_job.py", 
+                 python_cmd="python",
+                 ):
         self.etl_script = etl_script
         self.python_cmd = python_cmd
         self.job_history = []
@@ -84,12 +87,51 @@ class ETLScheduler:
                 'status': status
             })
             
+            # Publish to Kafka topics if ETL succeeded
+            if status == "SUCCESS":
+                self.publish_kafka_topics()
+            
             logger.info("=" * 80)
             
         except subprocess.TimeoutExpired:
             logger.error("ETL Job timed out after 1 hour")
         except Exception as e:
             logger.error(f"Error running ETL job: {e}", exc_info=True)
+    
+    def publish_kafka_topics(self):
+        """
+        Publish Gold layer analytics to Kafka topics
+        Runs gold_to_kafka_topics.py to publish ranked analytics
+        """
+        try:
+            logger.info("\n" + "=" * 80)
+            logger.info("Publishing Gold Analytics to Kafka Topics")
+            logger.info("=" * 80)
+            
+            cmd = [self.python_cmd, "gold_to_kafka_topics.py", "--mode", "all"]
+            
+            start_time = datetime.now()
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=300  # 5 minutes timeout
+            )
+            
+            end_time = datetime.now()
+            duration = (end_time - start_time).total_seconds()
+            
+            if result.returncode == 0:
+                logger.info(f"✓ Kafka topics published successfully in {duration:.2f} seconds")
+                logger.info("  Topics: batch/hot_area/*, batch/luxury/*")
+            else:
+                logger.error(f"✗ Failed to publish Kafka topics")
+                logger.error(f"Error: {result.stderr[-500:]}")  # Last 500 chars
+            
+        except subprocess.TimeoutExpired:
+            logger.error("Kafka publish timed out after 5 minutes")
+        except Exception as e:
+            logger.error(f"Error publishing to Kafka: {e}", exc_info=True)
     
     def daily_incremental_job(self):
         """
